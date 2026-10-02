@@ -1,0 +1,44 @@
+[
+  {
+    "query": "Who can mentor me in Rust and is free this month?",
+    "expectedMembers": [
+      "alice.community.eth",
+      "bob.community.eth"
+    ]
+  },
+  {
+    "query": "Who knows Solidity and can help with smart contract audits?",
+    "expectedMembers": [
+      "charlie.community.eth"
+    ]
+  },
+  {
+    "query": "Who can help me build React frontends for Web3?",
+    "expectedMembers": [
+      "diana.community.eth",
+      "eve.community.eth"
+    ]
+  },
+  {
+    "query": "Who works on ZK-Proofs and cryptography in Rust?",
+    "expectedMembers": [
+      "frank.community.eth"
+    ]
+  },
+  {
+    "query": "Who knows DevOps and Kubernetes for Sepolia deployment?",
+    "expectedMembers": [
+      "grace.community.eth"
+    ]
+  },
+  {
+    "query": "Who can mentor me in AI and PyTorch vector databases during October?",
+    "expectedMembers": [
+      "hector.community.eth"
+    ]
+  },
+  {
+    "query": "Who can help me with quantum computing and aerospace engineering?",
+    "expectedMembers": []
+  }
+]
