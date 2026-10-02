@@ -17,6 +17,13 @@ const STOP_WORDS = new Set([
   'she', 'her', 'it', 'its', 'they', 'them', 'this', 'that', 'these', 'those', 'help'
 ]);
 
+const META_WORDS = new Set([
+  'mentor', 'mentoring', 'mentors', 'helper', 'helpers', 'free',
+  'available', 'availability', 'month', 'week', 'weekend', 'year', 'day',
+  'time', 'session', 'sessions', 'call', 'calls', 'review', 'reviews', 'query',
+  'queries', 'expert', 'specialist', 'developer', 'engineer', 'lead', 'dev', 'devs'
+]);
+
 function tokenize(text: string): string[] {
   return text
     .toLowerCase()
@@ -40,8 +47,13 @@ export function retrieveCandidates(
     return [];
   }
 
+  // Separate query tokens into domain topic tokens vs meta modifier tokens
+  const topicTokens = queryTokens.filter((t) => !META_WORDS.has(t));
+  const metaTokens = queryTokens.filter((t) => META_WORDS.has(t));
+
   const scored: ScoredProfile[] = profiles.map((p) => {
-    let score = 0;
+    let topicScore = 0;
+    let metaScore = 0;
 
     const bioTokens = tokenize(p.bio);
     const skillsTokens = tokenize(p.skills.join(' '));
@@ -49,31 +61,22 @@ export function retrieveCandidates(
     const mentorTokens = tokenize(p.mentoring);
     const locationTokens = tokenize(p.location);
 
-    for (const qToken of queryTokens) {
-      // Direct skills match (highest priority)
-      if (p.skills.some((s) => s.toLowerCase().includes(qToken))) {
-        score += 5.0;
+    // 1. Evaluate domain topic tokens
+    for (const tToken of topicTokens) {
+      if (p.skills.some((s) => s.toLowerCase().includes(tToken))) {
+        topicScore += 6.0;
       }
-      if (skillsTokens.includes(qToken)) {
-        score += 4.0;
+      if (skillsTokens.includes(tToken)) {
+        topicScore += 5.0;
       }
-
-      // Mentoring & Bio match
-      if (mentorTokens.includes(qToken)) {
-        score += 3.0;
+      if (bioTokens.includes(tToken)) {
+        topicScore += 3.0;
       }
-      if (bioTokens.includes(qToken)) {
-        score += 2.0;
+      if (mentorTokens.includes(tToken)) {
+        topicScore += 2.5;
       }
-
-      // Availability match (e.g. "month", "weekend", "available", "free")
-      if (availTokens.includes(qToken)) {
-        score += 2.5;
-      }
-
-      // Location match
-      if (locationTokens.includes(qToken)) {
-        score += 1.5;
+      if (locationTokens.includes(tToken)) {
+        topicScore += 1.5;
       }
     }
 
@@ -81,11 +84,27 @@ export function retrieveCandidates(
     const queryLower = query.toLowerCase();
     for (const skill of p.skills) {
       if (queryLower.includes(skill.toLowerCase())) {
-        score += 6.0;
+        topicScore += 7.0;
       }
     }
 
-    return { profile: p, score };
+    // 2. Evaluate meta modifier tokens (availability/mentoring boosts)
+    for (const mToken of metaTokens) {
+      if (availTokens.includes(mToken)) {
+        metaScore += 2.0;
+      }
+      if (mentorTokens.includes(mToken)) {
+        metaScore += 1.5;
+      }
+    }
+
+    // CRITICAL RELEVANCE RULE: If topic tokens exist in query, candidate MUST match at least one topic token
+    if (topicTokens.length > 0 && topicScore === 0) {
+      return { profile: p, score: 0 };
+    }
+
+    const totalScore = topicScore + metaScore;
+    return { profile: p, score: totalScore };
   });
 
   // Filter candidates with a positive relevance score and sort descending
